@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yetsul.report.ReportDAO">
+	<select id="getReportAll" resultType="com.yetsul.model.Report">
+		select
+		    p.product_id productId,
+		    product_name productName,
+		    product_amount productAmount,
+		    last_in_stock_date lastInStockDate,
+		    (select nvl(max(day_amount),0) from yetsul_report r where o_date=to_char(sysdate-1,'yyyy-mm-dd') and r.product_id=p.product_id) dayBeforeOrderAmount,
+		    (select nvl(max(day_amount),0) from yetsul_report r where o_date=to_char(sysdate,'yyyy-mm-dd') and r.product_id=p.product_id) todayOrderAmount
+		from yetsul_product p
+		order by p.product_id
+	</select>
+	
+	<select id="getOrderToday" resultType="com.yetsul.model.Order">
+		select
+			o.order_id orderId,
+			user_id userId,
+			order_total_price orderTotalPrice,
+			order_total_num orderTotalNum,
+			order_date orderDate,
+			product_id mainProductId,
+			product_name mainProductName
+		from yetsul_order o
+			inner join (
+				select order_id,do3.product_id,product_name
+				from (
+					select do1.order_id order_id,do1.detail_order_id detail_order_id,product_id
+					from(
+						select order_id,min(detail_order_id) detail_order_id
+						from yetsul_detail_order group by order_id
+					) do1
+						inner join yetsul_detail_order do2 on do1.detail_order_id=do2.detail_order_id
+				) do3
+					inner join yetsul_product p on do3.product_id=p.product_id
+			) do on o.order_id=do.order_id
+		where to_char(order_date,'yyyy-mm-dd')=to_char(sysdate,'yyyy-mm-dd')
+		order by o.order_id desc
+	</select>
+	
+	<select id="getSalse" parameterType="String" resultType="com.yetsul.model.Report">
+		select
+			#{value} today,
+		    count(*) todayTotalOrderCount,
+		    sum(order_total_amount) todayTotalOrderAmount,
+		    sum(order_total_price) todayTotalOrderSalse
+		from yetsul_order
+		where to_char(order_date,'yyyy-mm-dd')=#{value}
+	</select>
+</mapper>

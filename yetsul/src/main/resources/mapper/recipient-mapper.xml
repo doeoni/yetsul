@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yetsul.recipient.RecipientDAO">
+	<select id="getRecipientBasic" parameterType="String" resultType="com.yetsul.model.Recipient">
+		select
+			recipient_id recipientId,
+			user_id userId,
+			recipient_name recipientName,
+			recipient_nickname recipientNickname,
+			recipient_postcode recipientPostcode,
+			recipient_addr1 recipientAddr1,
+			recipient_addr2 recipientAddr2,
+			recipient_addr3 recipientAddr3,
+			recipient_phone recipientPhone
+		from yetsul_recipient
+		where user_id=#{value} and recipient_status='Y' and show_or_not='Y'
+	</select>
+	
+	<select id="getRecipient" parameterType="String" resultType="com.yetsul.model.Recipient">
+		select
+			recipient_id recipientId,
+			user_id userId,
+			recipient_name recipientName,
+			recipient_nickname recipientNickname,
+			recipient_postcode recipientPostcode,
+			recipient_addr1 recipientAddr1,
+			recipient_addr2 recipientAddr2,
+			recipient_addr3 recipientAddr3,
+			recipient_phone recipientPhone,
+			recipient_status recipientStatus
+		from yetsul_recipient
+		where recipient_id=#{value}
+	</select>
+	
+	<select id="getRecipientAll" parameterType="String" resultType="com.yetsul.model.Recipient">
+		select
+			r.recipient_id recipientId,
+			r.user_id userId,
+			recipient_name recipientName,
+			recipient_nickname recipientNickname,
+			recipient_postcode recipientPostcode,
+			recipient_addr1 recipientAddr1,
+			recipient_addr2 recipientAddr2,
+			recipient_addr3 recipientAddr3,
+			recipient_phone recipientPhone,
+			recipient_status recipientStatus,
+			order_id lastOrderId,
+			order_date lastOrderDate
+		from yetsul_recipient r
+			left outer join (
+				select o1.recipient_id, o1.orderid order_id, o2.order_date order_date
+				from(select recipient_id,max(order_id) orderid from yetsul_order group by recipient_id) o1
+					inner join yetsul_order o2 on o1.orderid=o2.order_id 
+			) o on o.recipient_id=r.recipient_id
+		where user_id=#{value} and show_or_not='Y'
+		order by order_id desc nulls last,created_at
+	</select>
+	
+	<select id="getUserAddress" parameterType="com.yetsul.model.Login" resultType="com.yetsul.model.Recipient">
+		select
+			user_name recipientName,
+			user_id userId,
+			user_postcode recipientPostcode,
+			user_addr1 recipientAddr1,
+			user_addr2 recipientAddr2,
+			user_addr3 recipientAddr3,
+			user_phone recipientPhone,
+			'Y' recipientStatus
+		from yetsul_user
+		where user_id=#{id}
+	</select>
+	
+	<insert id="insert" parameterType="com.yetsul.model.Recipient">
+		insert into yetsul_recipient(
+			recipient_id,
+			user_id,
+			recipient_postcode,
+			recipient_addr1,
+			recipient_addr2,
+			<if test="recipientAddr3 != null">
+				recipient_addr3,
+			</if>
+			recipient_phone,
+			<if test="recipientStatus != null">
+				recipient_status,
+			</if>
+			recipient_name,
+			recipient_nickname,
+			created_by
+		) values(
+			#{userId} || '_' || (select count(*)+1 from yetsul_recipient where user_id=#{userId}),
+			#{userId},
+			#{recipientPostcode},
+			#{recipientAddr1},
+			#{recipientAddr2},
+			<if test="recipientAddr3 != null">
+				#{recipientAddr3},
+			</if>
+			#{recipientPhone},
+			<if test="recipientStatus != null">
+				#{recipientStatus},
+			</if>
+			#{recipientName},
+			<if test="recipientNickname != null">
+				#{recipientNickname},
+			</if>
+			<if test="recipientNickname == null">
+				'기본',
+			</if>
+			#{userId}
+ 		)
+	</insert>
+	<update id="update" parameterType="com.yetsul.model.Recipient">
+		update yetsul_recipient
+		set
+			recipient_postcode=#{recipientPostcode},
+			recipient_addr1=#{recipientAddr1},
+			recipient_addr2=#{recipientAddr2},
+			<if test="recipientAddr3 != null">
+				recipient_addr3=#{recipientAddr3},
+			</if>
+			recipient_phone=#{recipientPhone},
+			recipient_name=#{recipientName},
+			recipient_nickname=#{recipientNickname},
+			updated_by=#{updatedBy},
+			updated_at=sysdate
+		where recipient_id=#{recipientId}
+	</update>
+	
+	<update id="updateStatus" parameterType="com.yetsul.model.Recipient">
+		update yetsul_recipient
+		set
+			recipient_status=#{recipientStatus},
+			updated_at=sysdate,
+			updated_by=#{updatedBy}
+		where recipient_id=#{recipientId}
+	</update>
+	<update id="delete" parameterType="com.yetsul.model.Recipient">
+		update yetsul_recipient
+		set
+			show_or_not='N',
+			updated_at=sysdate,
+			updated_by=#{updatedBy}
+		where recipient_id=#{recipientId}
+	</update>
+</mapper>

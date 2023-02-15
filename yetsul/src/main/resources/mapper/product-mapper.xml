@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yetsul.product.ProductDAO">
+	<insert id="insert" parameterType="com.yetsul.model.Product">
+		insert into yetsul_product(
+			product_id,
+			product_category,
+			product_name,
+			product_maker,
+			product_price,
+			product_abv,
+			product_size,
+			product_amount,
+			product_desc,
+			product_img,
+			created_by
+		) values(
+			seq_p.nextval,
+			#{productCategory},
+			#{productName},
+			#{productMaker},
+			#{productPrice},
+			#{productABV},
+			#{productSize},
+			#{productAmount},
+			#{productDesc},
+			#{productImg},
+			#{createdBy}
+		)
+	</insert>
+	<select id="getProductAll" parameterType="com.yetsul.model.Page" resultType="com.yetsul.model.Product">
+		select
+			rownum,
+			rnum,
+			product_id productId,
+			product_category productCategory,
+			product_name productName,
+			product_maker productMaker,
+			product_price productPrice,
+			product_abv productABV,
+			product_size productSize,
+			product_amount productAmount,
+			product_desc productDesc,
+			product_img productImg
+		from (
+			select
+				rownum rnum,
+				product_id,product_category,product_name,product_maker,product_price,
+				product_abv,product_size,product_amount,product_desc,product_img,show_or_not 
+			from yetsul_product
+			where show_or_not = 'Y' and
+			<if test="searchKeyword != null">
+				product_category = #{searchKeyword} and
+			</if>
+			<![CDATA[
+				rownum <= #{nowRecode}+#{displayRecode}-1) 
+			where rnum >= #{nowRecode}
+			]]>
+		<if test="orderBy != null">
+			
+		</if>
+	</select>
+	<select id="getProduct" parameterType="com.yetsul.model.Product" resultType="com.yetsul.model.Product">
+		select
+			product_id productId,
+			product_category productCategory,
+			product_name productName,
+			product_maker productMaker,
+			product_price productPrice,
+			product_abv productABV,
+			product_size productSize,
+			product_amount productAmount,
+			product_desc productDesc,
+			product_img productImg
+		from yetsul_product
+		where product_id=#{productId}
+	</select>
+	
+	<update id="inStock" parameterType="com.yetsul.model.Product">
+		update yetsul_product 
+		set
+			product_amount=product_amount+#{productAmount},
+			updated_at=sysdate,
+			updated_by=#{updatedBy},
+			last_in_stock_date=sysdate
+		where product_id=#{productId}
+	</update>
+	
+	<select id="getTotalRecode" parameterType="com.yetsul.model.Page" resultType="int">
+		select count(*) from yetsul_product
+		where show_or_not = 'Y'
+		<if test="searchKeyword != null">
+			and product_category = #{searchKeyword}
+		</if>
+	</select>
+	
+</mapper>

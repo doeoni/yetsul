@@ -1,0 +1,33 @@
+@charset "UTF-8";
+
+nav {
+	background: #ff9966;
+	height: 60px;
+	line-height: 60px;
+	color: #ffffff;
+	font-size: 15px;
+}
+section {
+	background: #ffeee6;
+	min-height: 600px;
+	font-size: 15px;
+	line-height: 25px;
+}
+footer {
+	background: #ff9966;
+	height: 70px;
+	line-height: 80px;
+	color: #ffffff;
+}
+table, th, td {
+	border: 1px solid;
+	border-collapse: collapse;
+}
+th {
+	background: #ffcbb3;
+}
+th,td { width: auto; }
+a:link { text-decoration: none; }
+a:visited { text-decoration: none; }
+a:hover { text-decoration: none; }
+a:active { text-decoration: none; }

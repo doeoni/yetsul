@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yetsul.user.UserDAO">
+	<insert id="join" parameterType="com.yetsul.model.User">
+		insert into yetsul_user(user_id,user_password,user_name,user_email,user_phone,user_postcode,user_addr1,user_addr2,user_addr3,created_by)
+		values(#{userId},#{userPassword},#{userName},#{userEmail},#{userPhone},#{userPostcode},#{userAddr1},#{userAddr2},#{userAddr3},#{userId})
+	</insert>
+	
+	<select id="getUser" parameterType="com.yetsul.model.User" resultType="com.yetsul.model.User">
+		select
+			user_id userId,
+			user_password userPassword,
+			user_name userName,
+			user_email userEmail,
+			user_phone userPhone,
+			user_postcode userPostcode,
+			user_addr1 userAddr1,
+			user_addr2 userAddr2,
+			user_addr3 userAddr3,
+			user_grade userGrade
+		from yetsul_user
+		<if test="userId != null">
+			where user_id=#{userId}
+			<if test="userPhone != null">
+				and user_phone=#{userPhone} and user_name=#{userName}
+			</if>
+		</if>
+		<if test="userId == null">
+			where user_phone=#{userPhone} and user_name=#{userName}
+		</if>
+	</select>
+
+	<select id="getUserAll" parameterType="com.yetsul.model.Page" resultType="com.yetsul.model.User">
+		select
+			rnum,
+			user_id userId,
+			user_name userName,
+			user_grade userGrade,
+			order_count userOrderCount,
+			created_at createdAt
+		from (
+			select rownum rnum,t.*
+           	from(
+           		select 
+           			u.user_id user_id,
+           			user_name,
+           			user_grade,
+           			nvl(order_count,0) order_count,
+           			u.created_at created_at
+				from yetsul_user u
+					left join (
+						select 
+							user_id,
+							count(*) order_count 
+						from yetsul_order 
+						group by user_id) o 
+					on u.user_id=o.user_id
+				<if test="searchKeyword != null">
+					where
+					<if test="searchCondition == 'userId'">
+						u.user_id like '%'||#{searchKeyword}||'%'
+					</if> 
+					<if test="searchCondition == 'userName'">
+						user_name like '%'||#{searchKeyword}||'%'
+					</if> 
+					<if test="searchCondition == 'userGrade'">
+						user_grade = #{searchKeyword}
+					</if> 
+					<if test="searchCondition == 'userJoinDate'">
+						to_char(u.created_at,'yyyy-mm-dd') = #{searchKeyword}
+					</if> 
+				</if>		
+       			<if test="orderBy != null">
+       				order by ${sortBy} ${asc}
+       			</if>
+       		) t
+		<![CDATA[
+				where rownum <= #{nowRecode}+#{displayRecode}-1) 
+			where rnum >= #{nowRecode}
+		]]>
+	</select>
+	
+	<update id="userEditByUser" parameterType="com.yetsul.model.User">
+		update yetsul_user 
+		set
+			user_name=#{userName},
+			<if test="userPassword != ''">
+				user_password=#{userPassword},
+			</if>
+			user_phone=#{userPhone},
+			user_email=#{userEmail},
+			user_postcode=#{userPostcode},
+			user_addr1=#{userAddr1},
+			user_addr2=#{userAddr2},
+			user_addr3=#{userAddr3},
+			updated_at=sysdate,
+			updated_by=#{userId}
+		where user_id=#{userId}
+	</update>
+
+	<update id="userEditByAdmin" parameterType="com.yetsul.model.User">
+		update yetsul_user 
+		set
+			user_name=#{userName},
+			<if test="userPassword != ''">
+				user_password=#{userPassword},
+			</if>
+			user_phone=#{userPhone},
+			user_email=#{userEmail},
+			user_postcode=#{userPostcode},
+			user_addr1=#{userAddr1},
+			user_addr2=#{userAddr2},
+			user_addr3=#{userAddr3},
+			updated_at=sysdate,
+			updated_by=#{updatedBy},
+			user_grade=#{userGrade}
+		where user_id=#{userId}
+	</update>
+	
+	<update id="updateGrade" parameterType="com.yetsul.model.User">
+		update yetsul_user
+		set
+			user_grade=#{userGrade},
+			updated_at=sysdate,
+			updated_by=#{updatedBy}
+		where user_id=#{userId}
+	</update>
+	
+	<select id="getTotalRecode" parameterType="com.yetsul.model.Page" resultType="int">
+		select count(*) from yetsul_user
+		<if test="searchKeyword != null">
+			where
+			<if test="searchCondition == 'userId'">
+				user_id like '%'||#{searchKeyword}||'%'
+			</if> 
+			<if test="searchCondition == 'userName'">
+				user_name like '%'||#{searchKeyword}||'%'
+			</if> 
+			<if test="searchCondition == 'userGrade'">
+				user_grade = #{searchKeyword}
+			</if> 
+			<if test="searchCondition == 'userJoinDate'">
+				created_at = #{searchKeyword}
+			</if> 
+		</if>		
+	</select>
+	
+	<select id="getLoginUser" parameterType="com.yetsul.model.User" resultType="com.yetsul.model.Login">
+		select
+			user_id id,
+			user_password password,
+			user_name name,
+			user_grade grade
+		from yetsul_user
+		where user_id=#{userId}
+	</select>
+	
+	<update id="pwChange" parameterType="com.yetsul.model.User">
+		update yetsul_user set user_password=#{userPassword},updated_at=sysdate,updated_by=#{userId} where user_id=#{userId}
+	</update>
+</mapper>

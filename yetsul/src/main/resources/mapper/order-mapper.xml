@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yetsul.order.OrderDAO">
+	<select id="getOrder" parameterType="com.yetsul.model.Order" resultType="com.yetsul.model.Order">
+		select
+			user_id userId,
+			count(*) orderTotalNum,
+			sum(order_amount) orderTotalAmount,
+			sum(order_amount*product_price) orderTotalPrice
+		from yetsul_cart c
+			inner join yetsul_product p on c.product_id=p.product_id
+		where user_id=#{userId}
+		group by user_id
+	</select>
+	
+	<select id="getOrderAll" parameterType="String" resultType="com.yetsul.model.Order">
+		select
+			o.order_id orderId,
+			user_id userId,
+			recipient_id recipientId,
+			order_total_price orderTotalPrice,
+			order_total_num orderTotalNum,
+			order_total_amount orderTotalAmount,
+			order_date orderDate,
+			delivery_charge deliveryCharge,
+			product_id mainProductId,
+			product_name mainProductName
+		from yetsul_order o
+			inner join (
+				select order_id,do3.product_id,product_name
+				from (
+					select do1.order_id order_id,do1.detail_order_id detail_order_id,product_id
+					from(
+						select order_id,min(detail_order_id) detail_order_id
+						from yetsul_detail_order group by order_id
+					) do1
+						inner join yetsul_detail_order do2 on do1.detail_order_id=do2.detail_order_id
+				) do3
+					inner join yetsul_product p on do3.product_id=p.product_id
+			) do on o.order_id=do.order_id
+		where user_id=#{userId}
+		order by o.order_id desc
+	</select>
+	
+	<insert id="order" parameterType="com.yetsul.model.Order">
+		insert into yetsul_order(order_id,user_id,recipient_id,order_total_price,order_total_num,order_total_amount,delivery_charge)
+		values(seq_o.nextval,#{userId},#{recipientId},#{orderTotalPrice},#{orderTotalNum},#{orderTotalAmount},#{deliveryCharge})
+	</insert>
+	
+	<insert id="detailOrder" parameterType="com.yetsul.model.DetailOrder">
+		insert into yetsul_detail_order(detail_order_id,order_id,product_id,order_amount,created_by)
+		values(#{detailOrderId},#{orderId},#{productId},#{orderAmount},#{createdBy})
+	</insert>
+	
+	<insert id="deliveryCharge" parameterType="com.yetsul.model.DetailOrder">
+		insert into yetsul_detail_order(order_id,product_id,order_amount,created_by)
+		values(#{orderId},#{productId},#{orderAmount},#{createdBy})
+	</insert>
+	
+	<select id="getOrderId" parameterType="com.yetsul.model.Order" resultType="int">
+		select
+			order_id orderId
+		from(
+			select order_id
+			from yetsul_order
+			where user_id=#{userId}
+			order by order_date desc
+		)where rownum=1
+	</select>
+	
+	<select	id="getOrderOne" parameterType="com.yetsul.model.Order" resultType="com.yetsul.model.Order">
+		select
+			order_id orderId,
+			user_id userId,
+			recipient_id recipientId,
+			order_total_price orderTotalPrice,
+			order_total_num orderTotalNum,
+			order_total_amount orderTotalAmount,
+			order_date orderDate
+		from yetsul_order
+		where order_id=#{orderId}
+	</select>
+	
+	<select id="getDetailOrder" parameterType="com.yetsul.model.Order" resultType="com.yetsul.model.DetailOrder">
+		select
+			detail_order_id detailOrderId,
+			order_id orderId,
+			do.product_id productId,
+			product_name productName,
+			product_price productPrice,
+			order_amount orderAmount
+		from yetsul_detail_order do
+			inner join yetsul_product p on do.product_id=p.product_id
+		where order_id=#{orderId}
+		order by detail_order_id
+	</select>
+</mapper>
